@@ -1,19 +1,21 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. الاتصال بقاعدة بيانات MongoDB Atlas
+// الاتصال بقاعدة بيانات MongoDB Atlas
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://ddke3661_db_user:0gqGPerHWxF6P0O@cluster0.lxa8yjm.mongodb.net/?appName=Cluster0";
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log('Connected to MongoDB Atlas successfully!'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// 2. تعريف نماذج البيانات (Schemas & Models) بدلاً من جداول SQL
+// تعريف النماذج (Schemas)
 const contentSchema = new mongoose.Schema({
   title: String,
   youtube_video_id: String,
@@ -29,9 +31,7 @@ const watchHistorySchema = new mongoose.Schema({
 });
 const WatchHistory = mongoose.model('WatchHistory', watchHistorySchema);
 
-// 3. مسارات التطبيق (Endpoints)
-
-// جلب كل المحتوى
+// المسارات (Endpoints)
 app.get('/api/content', async (req, res) => {
   try {
     const contents = await Content.find({});
@@ -41,7 +41,6 @@ app.get('/api/content', async (req, res) => {
   }
 });
 
-// إضافة محتوى جديد
 app.post('/api/content', async (req, res) => {
   try {
     const { title, youtube_video_id, video_id } = req.body;
@@ -53,35 +52,12 @@ app.post('/api/content', async (req, res) => {
   }
 });
 
-// حذف محتوى
 app.delete('/api/content/:id', async (req, res) => {
   try {
     await Content.findByIdAndDelete(req.params.id);
     res.json({ message: 'تم حذف الفيديو', success: true });
   } catch (err) {
     res.status(500).json({ error: 'خطأ في الحذف' });
-  }
-});
-
-// تسجيل تاريخ المشاهدة
-app.post('/api/watch-history', async (req, res) => {
-  try {
-    const { child_id, content_id } = req.body;
-    const history = new WatchHistory({ child_id, content_id });
-    await history.save();
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'خطأ في تسجيل المشاهدة' });
-  }
-});
-
-// جلب تاريخ المشاهدة لطفل معين
-app.get('/api/watch-history/:childId', async (req, res) => {
-  try {
-    const history = await WatchHistory.find({ child_id: req.params.childId }).populate('content_id');
-    res.json(history);
-  } catch (err) {
-    res.status(500).json({ error: 'خطأ في جلب سجل المشاهدة' });
   }
 });
 
