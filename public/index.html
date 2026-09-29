@@ -239,7 +239,7 @@
             const playerContainer = document.getElementById('player-container');
             box.style.display = 'block';
             playerContainer.innerHTML = `
-                <h4 style="margin-top:0;">▶️ تشغيل: ${title}</h4>
+                <h4 style="margin-top:0;">▶️️ تشغيل: ${title}</h4>
                 <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
                     <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
                             style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
@@ -364,7 +364,7 @@
                             <span>🎬 <strong>${v.title}</strong></span>
                             <div class="action-btns">
                                 <button class="btn-edit" onclick="startEditVideo('${v._id}', '${v.title.replace(/'/g, "\\'")}', '${v.youtube_video_id}')">تعديل الرابط ✏️</button>
-                                <button class="btn-delete" onclick="deleteVideo('${v._id}')">حذف 🗑️</button>
+                                <button class="btn-delete" onclick="deleteVideo('${v._id}')">حذف 🗑️️</button>
                             </div>
                         </div>
                     `).join('');
@@ -415,19 +415,32 @@
         document.getElementById('add-child-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const data = {
-                name: document.getElementById('child-name').value,
+                name: document.getElementById('child-name').value.trim(),
                 gender: document.getElementById('child-gender').value,
-                age: document.getElementById('child-age').value,
-                screen_time_limit: document.getElementById('child-limit').value
+                age: Number(document.getElementById('child-age').value),
+                screen_time_limit: Number(document.getElementById('child-limit').value)
             };
+            
             fetch('/api/children', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
-            }).then(() => {
-                alert("تمت إضافة الطفل بنجاح");
+            })
+            .then(async res => {
+                const text = await res.text();
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    throw new Error(text);
+                }
+            })
+            .then(res => {
+                alert("تمت إضافة الطفل بنجاح 🎈");
                 document.getElementById('add-child-form').reset();
                 loadAdminData();
+            })
+            .catch(err => {
+                alert("خطأ أثناء الإضافة: " + err.message);
             });
         });
 
