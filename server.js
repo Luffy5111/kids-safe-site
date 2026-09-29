@@ -16,6 +16,13 @@ mongoose.connect(MONGO_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // تعريف النماذج (Schemas)
+const childSchema = new mongoose.Schema({
+  name: String,
+  avatar: String,
+  pin: String
+});
+const Child = mongoose.model('Child', childSchema);
+
 const contentSchema = new mongoose.Schema({
   title: String,
   youtube_video_id: String,
@@ -32,6 +39,24 @@ const watchHistorySchema = new mongoose.Schema({
 const WatchHistory = mongoose.model('WatchHistory', watchHistorySchema);
 
 // المسارات (Endpoints)
+
+// 1. جلب أسماء الأطفال (أحمد وسارة) أو إنشائهم تلقائياً إذا كانت القاعدة فارغة
+app.get('/api/children', async (req, res) => {
+  try {
+    let children = await Child.find({});
+    if (children.length === 0) {
+      children = await Child.insertMany([
+        { name: 'أحمد', avatar: '', pin: '' },
+        { name: 'سارة', avatar: '', pin: '' }
+      ]);
+    }
+    res.json(children);
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في جلب بيانات الأطفال' });
+  }
+});
+
+// 2. مسارات المحتوى الموجودة لديك مسبقاً
 app.get('/api/content', async (req, res) => {
   try {
     const contents = await Content.find({});
