@@ -15,7 +15,7 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('Connected to MongoDB Atlas successfully!'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// تعريف النماذج (Schemas)
+// 1. تعريف النماذج (Schemas) كاملة
 const childSchema = new mongoose.Schema({
   name: String,
   avatar: String,
@@ -38,9 +38,9 @@ const watchHistorySchema = new mongoose.Schema({
 });
 const WatchHistory = mongoose.model('WatchHistory', watchHistorySchema);
 
-// المسارات (Endpoints)
+// 2. المسارات (Endpoints) كاملة
 
-// 1. جلب أسماء الأطفال (أحمد وسارة) أو إنشائهم تلقائياً إذا كانت القاعدة فارغة
+// مسار جلب الأطفال (أحمد وسارة) - مع الإضافة التلقائية إذا كانت القاعدة فارغة
 app.get('/api/children', async (req, res) => {
   try {
     let children = await Child.find({});
@@ -56,7 +56,7 @@ app.get('/api/children', async (req, res) => {
   }
 });
 
-// 2. مسارات المحتوى الموجودة لديك مسبقاً
+// مسارات المحتوى (القديمة والجديدة)
 app.get('/api/content', async (req, res) => {
   try {
     const contents = await Content.find({});
@@ -71,7 +71,7 @@ app.post('/api/content', async (req, res) => {
     const { title, youtube_video_id, video_id } = req.body;
     const newContent = new Content({ title, youtube_video_id, video_id });
     await newContent.save();
-    res.json({ message: 'تم تحديث رابط الفيديو بنجاح', success: true });
+    res.json({ message: 'تم تحديث/حفظ الفيديو بنجاح', success: true });
   } catch (err) {
     res.status(500).json({ error: 'خطأ في حفظ المحتوى' });
   }
@@ -86,7 +86,7 @@ app.delete('/api/content/:id', async (req, res) => {
   }
 });
 
-// تشغيل السيرفر
+// 3. تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -167,22 +167,17 @@
         let activeChild = null;
         let timerInterval = null;
 
-        // دالة متطورة تحلل الرابط وتستخرج معرّف الفيديو فقط وتتجاهل أي معلمات مثل ?feature=shared
         function extractYouTubeId(urlOrId) {
             if (!urlOrId) return '';
             const cleanUrl = urlOrId.trim();
-            
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = cleanUrl.match(regExp);
-            
             if (match && match[2].length === 11) {
                 return match[2];
             }
-            
             if (cleanUrl.length === 11 && !cleanUrl.includes('/') && !cleanUrl.includes('.')) {
                 return cleanUrl;
             }
-            
             return cleanUrl;
         }
 
@@ -196,7 +191,7 @@
                         return;
                     }
                     container.innerHTML = children.map(c => `
-                        <div class="profile-card" onclick="selectProfile(${c.id}, '${c.name}', '${c.gender}', ${c.screen_time_limit}, ${c.used_time_seconds})">
+                        <div class="profile-card" onclick="selectProfile('${c._id}', '${c.name}', '${c.gender}', ${c.screen_time_limit}, ${c.used_time_seconds || 0})">
                             <span class="profile-avatar">${c.gender === 'boy' ? '👦' : '👧'}</span>
                             <p class="profile-name">${c.name}</p>
                         </div>
@@ -318,7 +313,7 @@
                         return;
                     }
                     container.innerHTML = videos.map(v => `
-                        <div class="video-card" onclick="playKidsVideo(${v.id}, '${v.youtube_video_id}', '${v.title.replace(/'/g, "\\'")}')">
+                        <div class="video-card" onclick="playKidsVideo('${v._id}', '${v.youtube_video_id}', '${v.title.replace(/'/g, "\\'")}')">
                             <img src="https://img.youtube.com/vi/${v.youtube_video_id}/mqdefault.jpg">
                             <p>${v.title}</p>
                         </div>
@@ -355,7 +350,7 @@
                     container.innerHTML = children.map(c => `
                         <div class="video-list-item">
                             <span>👦 <strong>${c.name}</strong> (المستهلك: ${Math.floor(c.used_time_seconds / 60)} / ${c.screen_time_limit} دقيقة)</span>
-                            <button style="width:auto; padding:6px 12px; background:#28a745;" onclick="resetChildTime(${c.id})">إعادة فتح الوقت 🔓</button>
+                            <button style="width:auto; padding:6px 12px; background:#28a745;" onclick="resetChildTime('${c._id}')">إعادة فتح الوقت 🔓</button>
                         </div>
                     `).join('');
                 });
@@ -368,8 +363,8 @@
                         <div class="video-list-item">
                             <span>🎬 <strong>${v.title}</strong></span>
                             <div class="action-btns">
-                                <button class="btn-edit" onclick="startEditVideo(${v.id}, '${v.title.replace(/'/g, "\\'")}', '${v.youtube_video_id}')">تعديل الرابط ✏️</button>
-                                <button class="btn-delete" onclick="deleteVideo(${v.id})">حذف 🗑️</button>
+                                <button class="btn-edit" onclick="startEditVideo('${v._id}', '${v.title.replace(/'/g, "\\'")}', '${v.youtube_video_id}')">تعديل الرابط ✏️</button>
+                                <button class="btn-delete" onclick="deleteVideo('${v._id}')">حذف 🗑️</button>
                             </div>
                         </div>
                     `).join('');
@@ -436,7 +431,6 @@
             });
         });
 
-        // إدارة نموذج إضافة وتعديل الفيديو
         document.getElementById('add-video-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -461,10 +455,6 @@
                     alert(res.message || "تم تحديث الفيديو بنجاح ✏️");
                     resetVideoForm();
                     loadAdminData();
-                })
-                .catch(err => {
-                    console.error("خطأ التحديث:", err);
-                    alert("حدث خطأ أثناء التحديث!");
                 });
             } else {
                 fetch('/api/content', {
@@ -477,10 +467,6 @@
                     alert(res.message || "تمت إضافة الفيديو بنجاح 🎬");
                     resetVideoForm();
                     loadAdminData();
-                })
-                .catch(err => {
-                    console.error("خطأ الإضافة:", err);
-                    alert("حدث خطأ أثناء الإضافة!");
                 });
             }
         });
