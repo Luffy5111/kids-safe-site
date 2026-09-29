@@ -15,48 +15,82 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('Connected to MongoDB Atlas successfully!'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// 1. تعريف النماذج (Schemas) كاملة
+// 1. تعريف النماذج (Schemas) المتوافقة تماماً مع الواجهة
 const childSchema = new mongoose.Schema({
   name: String,
-  avatar: String,
-  pin: String
+  gender: { type: String, default: 'boy' },
+  screen_time_limit: { type: Number, default: 30 }, // بالدقائق
+  used_time_seconds: { type: Number, default: 0 }
 });
 const Child = mongoose.model('Child', childSchema);
 
 const contentSchema = new mongoose.Schema({
   title: String,
   youtube_video_id: String,
-  video_id: String,
   createdAt: { type: Date, default: Date.now }
 });
 const Content = mongoose.model('Content', contentSchema);
 
 const watchHistorySchema = new mongoose.Schema({
-  child_id: mongoose.Schema.Types.ObjectId,
-  content_id: mongoose.Schema.Types.ObjectId,
+  child_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Child' },
+  content_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Content' },
   watched_at: { type: Date, default: Date.now }
 });
 const WatchHistory = mongoose.model('WatchHistory', watchHistorySchema);
 
-// 2. المسارات (Endpoints) كاملة
+// 2. المسارات (Endpoints)
 
-// مسار جلب الأطفال (أحمد وسارة) - مع الإضافة التلقائية إذا كانت القاعدة فارغة
+// جلب الأطفال
 app.get('/api/children', async (req, res) => {
   try {
-    let children = await Child.find({});
-    if (children.length === 0) {
-      children = await Child.insertMany([
-        { name: 'أحمد', avatar: '', pin: '' },
-        { name: 'سارة', avatar: '', pin: '' }
-      ]);
-    }
+    const children = await Child.find({});
     res.json(children);
   } catch (err) {
     res.status(500).json({ error: 'خطأ في جلب بيانات الأطفال' });
   }
 });
 
-// مسارات المحتوى (القديمة والجديدة)
+// إضافة طفل جديد (التي كانت ناقصة لديك)
+app.post('/api/children', async (req, res) => {
+  try {
+    const { name, gender, screen_time_limit } = req.body;
+    const newChild = new Child({
+      name,
+      gender: gender || 'boy',
+      screen_time_limit: Number(screen_time_limit) || 30,
+      used_time_seconds: 0
+    });
+    await newChild.save();
+    res.status(201).json({ message: 'تمت إضافة الطفل بنجاح', child: newChild });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في حفظ بيانات الطفل' });
+  }
+});
+
+// تحديث الوقت المستهلك للطفل
+app.post('/api/children/:id/update-time', async (req, res) => {
+  try {
+    const { seconds } = req.body;
+    await Child.findByIdAndUpdate(req.params.id, {
+      $inc: { used_time_seconds: seconds || 5 }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في تحديث الوقت' });
+  }
+});
+
+// إعادة تعيين وقت الطفل (إعادة فتح الوقت)
+app.post('/api/children/:id/reset-time', async (req, res) => {
+  try {
+    await Child.findByIdAndUpdate(req.params.id, { used_time_seconds: 0 });
+    res.json({ message: 'تم إعادة فتح الوقت بنجاح للطفل 🔓' });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في إعادة تعيين الوقت' });
+  }
+});
+
+// جلب المحتوى (الفيديوهات)
 app.get('/api/content', async (req, res) => {
   try {
     const contents = await Content.find({});
@@ -66,23 +100,66 @@ app.get('/api/content', async (req, res) => {
   }
 });
 
+// إضافة فيديو جديد
 app.post('/api/content', async (req, res) => {
   try {
-    const { title, youtube_video_id, video_id } = req.body;
-    const newContent = new Content({ title, youtube_video_id, video_id });
+    const { title, youtube_video_id } = req.body;
+    const newContent = new Content({ title, youtube_video_id });
     await newContent.save();
-    res.json({ message: 'تم تحديث/حفظ الفيديو بنجاح', success: true });
+    res.json({ message: 'تمت إضافة الفيديو بنجاح', success: true });
   } catch (err) {
     res.status(500).json({ error: 'خطأ في حفظ المحتوى' });
   }
 });
 
+// تعديل فيديو موجود
+app.put('/api/content/:id', async (req, res) => {
+  try {
+    const { title, youtube_video_id } = req.body;
+    await Content.findByIdAndUpdate(req.params.id, { title, youtube_video_id });
+    res.json({ message: 'تم تحديث الفيديو بنجاح ✏️️', success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في تحديث الفيديو' });
+  }
+});
+
+// حذف فيديو
 app.delete('/api/content/:id', async (req, res) => {
   try {
     await Content.findByIdAndDelete(req.params.id);
     res.json({ message: 'تم حذف الفيديو', success: true });
   } catch (err) {
     res.status(500).json({ error: 'خطأ في الحذف' });
+  }
+});
+
+// تسجيل مشاهدة فيديو
+app.post('/api/watch-history', async (req, res) => {
+  try {
+    const { child_id, content_id } = req.body;
+    const history = new WatchHistory({ child_id, content_id });
+    await history.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في تسجيل المشاهدة' });
+  }
+});
+
+// جلب سجل المشاهدات لطفل معين
+app.get('/api/watch-history/:child_id', async (req, res) => {
+  try {
+    const history = await WatchHistory.find({ child_id: req.params.child_id })
+      .populate('content_id')
+      .sort({ watched_at: -1 });
+    
+    const formatted = history.map(h => ({
+      title: h.content_id ? h.content_id.title : 'فيديو محذوف',
+      watched_at: h.watched_at
+    }));
+    
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في جلب سجل المشاهدات' });
   }
 });
 
