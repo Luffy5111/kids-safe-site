@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <!-- وسم تجاوب الشاشات للجوال والأيباد -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لوحة تحكم ولي الأمر 🛠️</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #f4f6f9; 
+            padding: 15px 10px; 
+            margin: 0; 
+            text-align: center; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        }
+        h2 { color: #333; margin-bottom: 20px; font-size: 1.4rem; }
+        h3 { color: #007bff; margin-top: 20px; text-align: right; font-size: 1.15rem; }
+        form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        
+        /* خط 16px يمنع الزوم التلقائي المزعج في أجهزة الجوال والأيباد */
+        input, select { 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            width: 100%; 
+            -webkit-appearance: none;
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            font-size: 1rem; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100%; 
+            touch-action: manipulation;
+        }
+        button:hover { background-color: #0056b3; }
+        .link-btn { display: inline-block; margin-top: 15px; color: #28a745; text-decoration: none; font-weight: bold; font-size: 1.1rem; padding: 10px; }
+        
+        /* تنسيق قائمة الفيديوهات والمشغل للجوال والتابلت */
+        .video-list-item { 
+            background: #f8f9fa; 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-top: 8px; 
+            text-align: right; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer;
+            transition: background 0.2s;
+            gap: 10px;
+        }
+        .video-list-item:hover { background: #e9ecef; }
+        #preview-box { display: none; margin-top: 20px; padding: 15px; background: #111; border-radius: 10px; color: white; }
+
+        /* تعديلات خفيفة للشاشات الصغيرة جداً */
+        @media (max-width: 480px) {
+            body { padding: 10px 5px; }
+            .container { padding: 15px 10px; }
+            .video-list-item { flex-direction: column; align-items: flex-start; gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>لوحة تحكم ولي الأمر 👨‍👩‍👧‍👦</h2>
+
+        <!-- نموذج إضافة طفل -->
+        <h3>إضافة طفل جديد 👦👧</h3>
+        <form id="add-child-form">
+            <input type="text" id="child-name" placeholder="اسم الطفل" required>
+            
+            <select id="child-gender" required>
+                <option value="boy">فتى 👦</option>
+                <option value="girl">فتاة 👧</option>
+            </select>
+
+            <input type="number" id="child-age" placeholder="العمر" required>
+            
+            <select id="child-limit" required>
+                <option value="" disabled selected>اختر حد الوقت اليومي ⏱️</option>
+                <option value="1">1 دقيقة (للتجربة السريعة ⚡)</option>
+                <option value="2">2 دقيقة</option>
+                <option value="3">3 دقائق</option>
+                <option value="5">5 دقائق</option>
+                <option value="10">10 دقائق</option>
+                <option value="15">15 دقيقة</option>
+                <option value="30">30 دقيقة</option>
+                <option value="45">45 دقيقة</option>
+                <option value="60">ساعة واحدة (60 دقيقة)</option>
+            </select>
+
+            <button type="submit">إضافة الطفل</button>
+        </form>
+
+        <!-- نموذج إضافة فيديو -->
+        <h3>إضافة فيديو جديد 🎬</h3>
+        <form id="add-video-form">
+            <input type="text" id="video-title" placeholder="عنوان الفيديو" required>
+            <input type="text" id="video-yt-input" placeholder="رابط فيديو يوتيوب أو المعرّف" required>
+            <button type="submit" style="background-color: #28a745;">إضافة الفيديو</button>
+        </form>
+
+        <!-- نافذة معاينة وتشغيل المقطع المختار -->
+        <div id="preview-box"></div>
+
+        <!-- قائمة الفيديوهات المضافة -->
+        <h3>الفيديوهات المضافة حالياً 📺</h3>
+        <div id="added-videos-list">
+            <p style="color: #777;">جاري تحميل الفيديوهات...</p>
+        </div>
+
+        <br>
+        <a href="/" class="link-btn">⬅️ العودة لصفحة الأطفال الرئيسية</a>
+    </div>
+
+    <script>
+        function extractYouTubeId(urlOrId) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = urlOrId.trim().match(regExp);
+            return (match && match[2].length === 11) ? match[2] : urlOrId.trim();
+        }
+
+        function playPreview(videoId, title) {
+            const box = document.getElementById('preview-box');
+            box.style.display = 'block';
+            box.innerHTML = `
+                <h4 style="margin-top:0;">🎥 معاينة الفيديو: ${title}</h4>
+                <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
+                    <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
+                            allow="autoplay; encrypted-media" allowfullscreen>
+                    </iframe>
+                </div>
+                <button onclick="closePreview()" style="background-color:#dc3545; margin-top:12px;">إغلاق المعاينة ❌</button>
+            `;
+            box.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closePreview() {
+            const box = document.getElementById('preview-box');
+            box.style.display = 'none';
+            box.innerHTML = '';
+        }
+
+        function loadAddedVideos() {
+            fetch('/api/content')
+                .then(res => res.json())
+                .then(videos => {
+                    const container = document.getElementById('added-videos-list');
+                    if (!videos || videos.length === 0) {
+                        container.innerHTML = '<p style="color: #777;">لا يوجد فيديوهات مضافة بعد.</p>';
+                        return;
+                    }
+                    container.innerHTML = videos.map(v => {
+                        const safeTitle = v.title.replace(/'/g, "\\'");
+                        return `
+                            <div class="video-list-item" onclick="playPreview('${v.youtube_video_id}', '${safeTitle}')">
+                                <span><strong>🎬 ${v.title}</strong></span>
+                                <span style="color:#007bff; font-weight:bold;">▶️ تشغيل</span>
+                            </div>
+                        `;
+                    }).join('');
+                });
+        }
+
+        window.onload = loadAddedVideos;
+
+        document.getElementById('add-child-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('child-name').value,
+                gender: document.getElementById('child-gender').value,
+                age: document.getElementById('child-age').value,
+                screen_time_limit: document.getElementById('child-limit').value
+            };
+
+            fetch('/api/children', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message);
+                document.getElementById('add-child-form').reset();
+            });
+        });
+
+        document.getElementById('add-video-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const rawInput = document.getElementById('video-yt-input').value;
+            const videoId = extractYouTubeId(rawInput);
+
+            const data = {
+                title: document.getElementById('video-title').value,
+                youtube_video_id: videoId,
+                min_age: 3,
+                max_age: 12
+            };
+
+            fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message);
+                document.getElementById('add-video-form').reset();
+                loadAddedVideos();
+            });
+        });
+    </script>
+</body>
+</html>

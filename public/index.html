@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>منصة المحتوى الآمن للأطفال 🛡️</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #f0f4f8; 
+            padding: 15px 10px; 
+            margin: 0; 
+            text-align: center; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 720px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 25px 20px; 
+            border-radius: 20px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
+            position: relative;
+        }
+
+        .profile-title { color: #2c3e50; margin-bottom: 25px; font-size: 1.5rem; }
+        .profiles-grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 25px 0; }
+        .profile-card {
+            background: #ffffff; border: 3px solid #e2e8f0; border-radius: 20px; padding: 20px; width: 140px;
+            cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .profile-card:hover { transform: translateY(-6px); border-color: #4a90e2; }
+        .profile-avatar { font-size: 3.8rem; margin-bottom: 8px; display: block; }
+        .profile-name { font-size: 1.2rem; font-weight: bold; color: #333; margin: 0; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; }
+        .header h2 { margin: 0; font-size: 1.2rem; color: #2c3e50; }
+        .btn-header { border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+        .btn-parent { background: #6c5ce7; color: white; }
+        .btn-switch { background: #e2e8f0; color: #333; }
+
+        .section { display: none; }
+        .active-section { display: block; }
+
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: #e2e8f0; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .tab-btn.active-tab { background: #007bff; color: white; }
+
+        .time-badge { background: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 15px; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .lock-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.92);
+            color: white; z-index: 999; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+
+        form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; text-align: right; }
+        input, select { padding: 11px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; width: 100%; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px; font-size: 1rem; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; margin-top: 10px; }
+        .video-card { background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; cursor: pointer; }
+        .video-card img { width: 100%; border-radius: 6px; }
+        .video-card p { font-size: 0.85rem; margin: 6px 0 0 0; font-weight: bold; color: #333; }
+
+        .video-list-item { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-top: 8px; text-align: right; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        #kids-player-box { display: none; margin-bottom: 15px; padding: 12px; background: #111; border-radius: 12px; color: white; }
+        
+        .action-btns { display: flex; gap: 5px; }
+        .btn-edit { background: #ffc107; color: #000; width: auto; padding: 6px 10px; font-size: 0.85rem; }
+        .btn-delete { background: #dc3545; color: #fff; width: auto; padding: 6px 10px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <div id="lock-screen" class="lock-overlay">
+        <span style="font-size: 5rem;">⌛</span>
+        <h2>انتهى وقت الشاشة اليوم!</h2>
+        <p style="color: #ccc; max-width: 400px;">لقد استهلكت وقت المشاهدة المسموح لك به لهذا اليوم. عد غداً لمشاهدة المزيد 🎈</p>
+        <button onclick="openParentModeDirectly()" style="width: auto; padding: 10px 20px; background: #6c5ce7; margin-top: 15px;">دخول ولي الأمر لفتح الوقت 🔒</button>
+    </div>
+
+    <div class="container">
+        
+        <!-- 1. شاشة اختيار الطفل -->
+        <div id="selection-screen" class="section active-section">
+            <h2 class="profile-title">من يشاهد الآن؟ 🎈</h2>
+            <div id="profiles-container" class="profiles-grid"></div>
+            <button class="btn-header btn-parent" style="margin-top: 15px;" onclick="openParentModeDirectly()">دخول ولي الأمر 🔒</button>
+        </div>
+
+        <!-- 2. واجهة الطفل -->
+        <div id="kids-section" class="section">
+            <div class="header">
+                <h2 id="current-child-name">حساب الطفل 👦</h2>
+                <div>
+                    <button class="btn-header btn-switch" onclick="showProfileSelection()">تغيير الحساب 🔄</button>
+                    <button class="btn-header btn-parent" onclick="openParentModeDirectly()">ولي الأمر 🔒</button>
+                </div>
+            </div>
+
+            <div class="time-badge" id="time-badge-text">المتبقي من الوقت: -- دقيقة</div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active-tab" id="tab-videos-btn" onclick="switchKidTab('videos')">🎬 تصفح المكتبة</button>
+                <button class="tab-btn" id="tab-history-btn" onclick="switchKidTab('history')">📜 سجل المشاهدات</button>
+            </div>
+
+            <div id="kids-player-box">
+                <div id="player-container"></div>
+                <button onclick="closePlayer()" style="background-color:#28a745; margin-top:12px; font-size:1.1rem;">📚 ارجع للمكتبة</button>
+            </div>
+
+            <div id="tab-videos-content">
+                <div id="kids-video-grid" class="video-grid"></div>
+            </div>
+
+            <div id="tab-history-content" style="display: none;">
+                <div id="history-list"></div>
+            </div>
+        </div>
+
+        <!-- 3. لوحة ولي الأمر -->
+        <div id="admin-section" class="section">
+            <div class="header">
+                <h2>لوحة تحكم ولي الأمر 🛠️</h2>
+                <button class="btn-header btn-switch" onclick="showProfileSelection()">الخروج 🚪</button>
+            </div>
+
+            <h3>إعادة فتح وقت الطفل ⏱️</h3>
+            <div id="admin-children-reset-list" style="margin-bottom: 20px;"></div>
+
+            <h3>إضافة طفل جديد 👦👧</h3>
+            <form id="add-child-form">
+                <input type="text" id="child-name" placeholder="اسم الطفل" required>
+                <select id="child-gender" required>
+                    <option value="boy">فتى 👦</option>
+                    <option value="girl">فتاة 👧</option>
+                </select>
+                <input type="number" id="child-age" placeholder="العمر" required>
+                <select id="child-limit" required>
+                    <option value="" disabled selected>حد الوقت اليومي ⏱️</option>
+                    <option value="1">1 دقيقة (للتجربة⚡)</option>
+                    <option value="5">5 دقائق</option>
+                    <option value="15">15 دقيقة</option>
+                    <option value="30">30 دقيقة</option>
+                </select>
+                <button type="submit">إضافة الطفل</button>
+            </form>
+
+            <h3 id="form-video-title">إضافة فيديو جديد 🎬</h3>
+            <form id="add-video-form">
+                <input type="hidden" id="edit-video-id" value="">
+                <input type="text" id="video-title" placeholder="عنوان الفيديو" required>
+                <input type="text" id="video-yt-input" placeholder="رابط فيديو يوتيوب أو المعرّف" required>
+                <button type="submit" id="btn-save-video" style="background-color: #28a745;">إضافة الفيديو</button>
+                <button type="button" id="btn-cancel-edit" onclick="resetVideoForm()" style="background-color: #6c757d; display: none; margin-top: 5px;">إلغاء التعديل ✖️</button>
+            </form>
+
+            <h3>المحتوى المتاح حالياً (إدارة وتعديل) 📺</h3>
+            <div id="admin-videos-list"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const PARENT_PIN = "1234";
+        let activeChild = null;
+        let timerInterval = null;
+
+        // دالة متطورة تحلل الرابط وتستخرج معرّف الفيديو فقط وتتجاهل أي معلمات مثل ?feature=shared
+        function extractYouTubeId(urlOrId) {
+            if (!urlOrId) return '';
+            const cleanUrl = urlOrId.trim();
+            
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = cleanUrl.match(regExp);
+            
+            if (match && match[2].length === 11) {
+                return match[2];
+            }
+            
+            if (cleanUrl.length === 11 && !cleanUrl.includes('/') && !cleanUrl.includes('.')) {
+                return cleanUrl;
+            }
+            
+            return cleanUrl;
+        }
+
+        function loadProfiles() {
+            fetch('/api/children')
+                .then(res => res.json())
+                .then(children => {
+                    const container = document.getElementById('profiles-container');
+                    if (!children || children.length === 0) {
+                        container.innerHTML = '<p style="color:#777;">لا يوجد حسابات أطفال. ادخل بصفة ولي الأمر لإضافة حساب.</p>';
+                        return;
+                    }
+                    container.innerHTML = children.map(c => `
+                        <div class="profile-card" onclick="selectProfile(${c.id}, '${c.name}', '${c.gender}', ${c.screen_time_limit}, ${c.used_time_seconds})">
+                            <span class="profile-avatar">${c.gender === 'boy' ? '👦' : '👧'}</span>
+                            <p class="profile-name">${c.name}</p>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function selectProfile(id, name, gender, limitMinutes, usedSeconds) {
+            activeChild = { id, name, gender, limitMinutes, usedSeconds };
+            
+            if (activeChild.usedSeconds >= activeChild.limitMinutes * 60) {
+                document.getElementById('lock-screen').style.display = 'flex';
+                return;
+            }
+
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('current-child-name').innerText = `حساب ${name} ${gender === 'boy' ? '👦' : '👧'}`;
+            updateTimeDisplay();
+            showSection('kids-section');
+            loadKidsVideos();
+            switchKidTab('videos');
+        }
+
+        function updateTimeDisplay() {
+            const totalAllowedSec = activeChild.limitMinutes * 60;
+            const remainingSec = Math.max(0, totalAllowedSec - activeChild.usedSeconds);
+            const remainingMin = Math.ceil(remainingSec / 60);
+            
+            document.getElementById('time-badge-text').innerText = `الوقت المتبقي اليوم: ${remainingMin} دقيقة ⏱️`;
+
+            if (remainingSec <= 0) {
+                closePlayer();
+                document.getElementById('lock-screen').style.display = 'flex';
+            }
+        }
+
+        function playKidsVideo(contentId, videoId, title) {
+            fetch('/api/watch-history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ child_id: activeChild.id, content_id: contentId })
+            });
+
+            const box = document.getElementById('kids-player-box');
+            const playerContainer = document.getElementById('player-container');
+            box.style.display = 'block';
+            playerContainer.innerHTML = `
+                <h4 style="margin-top:0;">▶️ تشغيل: ${title}</h4>
+                <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
+                    <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
+                            allow="autoplay; encrypted-media" allowfullscreen>
+                    </iframe>
+                </div>
+            `;
+            box.scrollIntoView({ behavior: 'smooth' });
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                activeChild.usedSeconds += 1;
+                updateTimeDisplay();
+
+                if (activeChild.usedSeconds % 5 === 0) {
+                    fetch(`/api/children/${activeChild.id}/update-time`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ seconds: 5 })
+                    });
+                }
+            }, 1000);
+        }
+
+        function closePlayer() {
+            clearInterval(timerInterval);
+            document.getElementById('kids-player-box').style.display = 'none';
+            document.getElementById('player-container').innerHTML = '';
+        }
+
+        function switchKidTab(tab) {
+            if (tab === 'videos') {
+                document.getElementById('tab-videos-content').style.display = 'block';
+                document.getElementById('tab-history-content').style.display = 'none';
+                document.getElementById('tab-videos-btn').classList.add('active-tab');
+                document.getElementById('tab-history-btn').classList.remove('active-tab');
+            } else {
+                document.getElementById('tab-videos-content').style.display = 'none';
+                document.getElementById('tab-history-content').style.display = 'block';
+                document.getElementById('tab-history-btn').classList.add('active-tab');
+                document.getElementById('tab-videos-btn').classList.remove('active-tab');
+                loadWatchHistory();
+            }
+        }
+
+        function loadWatchHistory() {
+            fetch(`/api/watch-history/${activeChild.id}`)
+                .then(res => res.json())
+                .then(history => {
+                    const container = document.getElementById('history-list');
+                    if (!history || history.length === 0) {
+                        container.innerHTML = '<p style="color:#777;">لم تشاهد أي فيديو حتى الآن.</p>';
+                        return;
+                    }
+                    container.innerHTML = history.map(item => `
+                        <div class="video-list-item">
+                            <span>🎬 <strong>${item.title}</strong></span>
+                            <small style="color:#777;">${new Date(item.watched_at).toLocaleTimeString('ar-SA')}</small>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function loadKidsVideos() {
+            fetch('/api/content')
+                .then(res => res.json())
+                .then(videos => {
+                    const container = document.getElementById('kids-video-grid');
+                    if (!videos || videos.length === 0) {
+                        container.innerHTML = '<p style="color: #777; grid-column: 1/-1;">لا يوجد فيديوهات مضافة.</p>';
+                        return;
+                    }
+                    container.innerHTML = videos.map(v => `
+                        <div class="video-card" onclick="playKidsVideo(${v.id}, '${v.youtube_video_id}', '${v.title.replace(/'/g, "\\'")}')">
+                            <img src="https://img.youtube.com/vi/${v.youtube_video_id}/mqdefault.jpg">
+                            <p>${v.title}</p>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function openParentModeDirectly() {
+            const pin = prompt("أدخل رمز ولي الأمر للدخول:");
+            if (pin === PARENT_PIN) {
+                closePlayer();
+                document.getElementById('lock-screen').style.display = 'none';
+                showSection('admin-section');
+                loadAdminData();
+            } else if (pin !== null) {
+                alert("الرمز غير صحيح!");
+            }
+        }
+
+        function resetChildTime(childId) {
+            fetch(`/api/children/${childId}/reset-time`, { method: 'POST' })
+                .then(res => res.json())
+                .then(res => {
+                    alert(res.message);
+                    loadAdminData();
+                });
+        }
+
+        function loadAdminData() {
+            fetch('/api/children')
+                .then(res => res.json())
+                .then(children => {
+                    const container = document.getElementById('admin-children-reset-list');
+                    container.innerHTML = children.map(c => `
+                        <div class="video-list-item">
+                            <span>👦 <strong>${c.name}</strong> (المستهلك: ${Math.floor(c.used_time_seconds / 60)} / ${c.screen_time_limit} دقيقة)</span>
+                            <button style="width:auto; padding:6px 12px; background:#28a745;" onclick="resetChildTime(${c.id})">إعادة فتح الوقت 🔓</button>
+                        </div>
+                    `).join('');
+                });
+
+            fetch('/api/content')
+                .then(res => res.json())
+                .then(videos => {
+                    const container = document.getElementById('admin-videos-list');
+                    container.innerHTML = videos.map(v => `
+                        <div class="video-list-item">
+                            <span>🎬 <strong>${v.title}</strong></span>
+                            <div class="action-btns">
+                                <button class="btn-edit" onclick="startEditVideo(${v.id}, '${v.title.replace(/'/g, "\\'")}', '${v.youtube_video_id}')">تعديل الرابط ✏️</button>
+                                <button class="btn-delete" onclick="deleteVideo(${v.id})">حذف 🗑️</button>
+                            </div>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function startEditVideo(id, title, youtubeId) {
+            document.getElementById('form-video-title').innerText = "تعديل رابط الفيديو ✏️";
+            document.getElementById('edit-video-id').value = id;
+            document.getElementById('video-title').value = title;
+            document.getElementById('video-yt-input').value = `https://www.youtube.com/watch?v=${youtubeId}`;
+            document.getElementById('btn-save-video').innerText = "حفظ التعديلات";
+            document.getElementById('btn-save-video').style.backgroundColor = "#ffc107";
+            document.getElementById('btn-save-video').style.color = "#000";
+            document.getElementById('btn-cancel-edit').style.display = "block";
+
+            document.getElementById('add-video-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetVideoForm() {
+            document.getElementById('form-video-title').innerText = "إضافة فيديو جديد 🎬";
+            document.getElementById('edit-video-id').value = "";
+            document.getElementById('add-video-form').reset();
+            document.getElementById('btn-save-video').innerText = "إضافة الفيديو";
+            document.getElementById('btn-save-video').style.backgroundColor = "#28a745";
+            document.getElementById('btn-save-video').style.color = "#fff";
+            document.getElementById('btn-cancel-edit').style.display = "none";
+        }
+
+        function deleteVideo(id) {
+            if (confirm("هل أنت متأكد من حذف هذا الفيديو؟")) {
+                fetch('/api/content/' + id, { method: 'DELETE' }).then(() => loadAdminData());
+            }
+        }
+
+        function showProfileSelection() {
+            closePlayer();
+            document.getElementById('lock-screen').style.display = 'none';
+            showSection('selection-screen');
+            loadProfiles();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+            document.getElementById(id).classList.add('active-section');
+        }
+
+        document.getElementById('add-child-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('child-name').value,
+                gender: document.getElementById('child-gender').value,
+                age: document.getElementById('child-age').value,
+                screen_time_limit: document.getElementById('child-limit').value
+            };
+            fetch('/api/children', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                alert("تمت إضافة الطفل بنجاح");
+                document.getElementById('add-child-form').reset();
+                loadAdminData();
+            });
+        });
+
+        // إدارة نموذج إضافة وتعديل الفيديو
+        document.getElementById('add-video-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const editId = document.getElementById('edit-video-id').value;
+            const rawInput = document.getElementById('video-yt-input').value;
+            const videoId = extractYouTubeId(rawInput);
+            const title = document.getElementById('video-title').value;
+
+            if (!videoId) {
+                alert("يرجى إدخال رابط يوتيوب صحيح!");
+                return;
+            }
+
+            if (editId) {
+                fetch('/api/content/' + editId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, youtube_video_id: videoId })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    alert(res.message || "تم تحديث الفيديو بنجاح ✏️");
+                    resetVideoForm();
+                    loadAdminData();
+                })
+                .catch(err => {
+                    console.error("خطأ التحديث:", err);
+                    alert("حدث خطأ أثناء التحديث!");
+                });
+            } else {
+                fetch('/api/content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, youtube_video_id: videoId })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    alert(res.message || "تمت إضافة الفيديو بنجاح 🎬");
+                    resetVideoForm();
+                    loadAdminData();
+                })
+                .catch(err => {
+                    console.error("خطأ الإضافة:", err);
+                    alert("حدث خطأ أثناء الإضافة!");
+                });
+            }
+        });
+
+        window.onload = loadProfiles;
+    </script>
+</body>
+</html>
